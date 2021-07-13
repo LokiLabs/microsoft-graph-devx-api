@@ -10,7 +10,6 @@ pr:
     include:
     - dev
     - master
-    - interns/*
 
 pool:
   vmImage: 'windows-latest'
