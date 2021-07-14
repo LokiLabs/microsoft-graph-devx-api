@@ -61,6 +61,7 @@
     <ProjectReference Include="..\ChangesService\ChangesService.csproj" />
     <ProjectReference Include="..\CodeSnippetsReflection\CodeSnippetsReflection.csproj" />
     <ProjectReference Include="..\FileService\FileService.csproj" />
+    <ProjectReference Include="..\GraphExplorerAppModeService\GraphExplorerAppModeService.csproj" />
     <ProjectReference Include="..\GraphExplorerPermissionsService\GraphExplorerPermissionsService.csproj" />
     <ProjectReference Include="..\GraphExplorerSamplesService\GraphExplorerSamplesService.csproj" />
     <ProjectReference Include="..\OpenAPIService\OpenAPIService.csproj" />
