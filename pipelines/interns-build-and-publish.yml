@@ -8,6 +8,8 @@
 trigger:
   branches:
     include:
+      - master
+      - dev
       - feature/*
       - task/*
       - fix/*
@@ -16,6 +18,8 @@ trigger:
 pr:
   branches:
     include:
+      - master
+      - dev
       - feature/*
       - task/*
       - fix/*
