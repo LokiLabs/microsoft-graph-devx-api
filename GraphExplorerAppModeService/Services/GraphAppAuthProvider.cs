@@ -9,6 +9,7 @@ namespace GraphExplorerAppModeService.Services
     {
         private readonly IConfidentialClientApplication _app;
         private readonly string[] _scopes;
+
         public GraphAppAuthProvider(string clientId, string clientSecret, string[] scopes, string uri)
         {
             _scopes = scopes;

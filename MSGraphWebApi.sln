@@ -43,7 +43,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityService", "UtilitySe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UtilityService.Test", "UtilityService.Test\UtilityService.Test.csproj", "{0F4A15DC-F4CD-415D-A62D-6B0D95ED25E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphExplorerAppModeService", "GraphExplorerAppModeService\GraphExplorerAppModeService.csproj", "{AF515BB3-08B5-41A1-80E6-4529670A6B1C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GraphExplorerAppModeService", "GraphExplorerAppModeService\GraphExplorerAppModeService.csproj", "{AF515BB3-08B5-41A1-80E6-4529670A6B1C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{23802A4B-921F-4C54-A161-ADE4DEC77F91}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
