@@ -15,45 +15,46 @@ namespace GraphWebApi.Controllers
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpGet]
-        public async Task<IActionResult> GetAsync(string all)
+        public async Task<IActionResult> GetAsync(string all, [FromHeader] string Authorization)
         {
-            return await ProcessRequestAsync("GET", all, null).ConfigureAwait(false);
+            return await ProcessRequestAsync("GET", all, null, Authorization).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpPost]
-        public async Task<IActionResult> PostAsync(string all, [FromBody] object body)
+        public async Task<IActionResult> PostAsync(string all, [FromBody] object body, [FromHeader] string Authorization)
         {
-            return await ProcessRequestAsync("POST", all, body).ConfigureAwait(false);
+            return await ProcessRequestAsync("POST", all, body, Authorization).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpDelete]
-        public async Task<IActionResult> DeleteAsync(string all)
+        public async Task<IActionResult> DeleteAsync(string all, [FromHeader] string Authorization)
         {
-            return await ProcessRequestAsync("DELETE", all, null).ConfigureAwait(false);
+            return await ProcessRequestAsync("DELETE", all, null, Authorization).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpPut]
-        public async Task<IActionResult> PutAsync(string all, [FromBody] object body)
+        public async Task<IActionResult> PutAsync(string all, [FromBody] object body, [FromHeader] string Authorization)
         {
-            return await ProcessRequestAsync("PUT", all, body).ConfigureAwait(false);
+            return await ProcessRequestAsync("PUT", all, body, Authorization).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpPatch]
-        public async Task<IActionResult> PatchAsync(string all, [FromBody] object body)
+        public async Task<IActionResult> PatchAsync(string all, [FromBody] object body, [FromHeader] string Authorization)
         {
-            return await ProcessRequestAsync("PATCH", all, body).ConfigureAwait(false);
+            return await ProcessRequestAsync("PATCH", all, body, Authorization).ConfigureAwait(false);
         }
 
-        private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content)
+        private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content, string Authorizaton)
         {
+            
             return Ok();
         }
     }
