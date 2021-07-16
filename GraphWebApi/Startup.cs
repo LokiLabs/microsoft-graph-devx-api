@@ -30,7 +30,6 @@ using OpenAPIService;
 using System.Threading.Tasks;
 using Microsoft.Identity.Web;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using System;
 
 namespace GraphWebApi
 {
