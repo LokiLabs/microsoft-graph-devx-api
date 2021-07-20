@@ -33,7 +33,7 @@ namespace GraphWebApi.Controllers
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
         public async Task<IActionResult> GetAsync(string all)
         {
-            return await ProcessRequestAsync("GET", all, null).ConfigureAwait(false);
+            return await this.ProcessRequestAsync("GET", all, null).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
@@ -54,6 +54,7 @@ namespace GraphWebApi.Controllers
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
         public async Task<IActionResult> PostAsync(string all, [FromBody] object body)
         {
+            Console.WriteLine(body);
             return await ProcessRequestAsync("POST", all, body).ConfigureAwait(false);
         }
 
@@ -62,92 +63,16 @@ namespace GraphWebApi.Controllers
         [HttpDelete]
         public async Task<IActionResult> DeleteAsync(string all)
         {
-            try
-            {
-                string accessToken = GetTokenAsync("").Result.ToString();
-                HttpClient httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await httpClient.DeleteAsync("https://graph.microsoft.com/v1.0/teams/8248c7dd-f773-40a5-b090-19386856ced3/channels/19:cfc8004ddb25441b8be2b7c5da02967a@thread.tacv2");
-                response.EnsureSuccessStatusCode();
-                Console.WriteLine("http status code is ok");
-                Console.WriteLine(response.ReasonPhrase);
-                Console.WriteLine(response.Content);
-                return Ok(response.ReasonPhrase);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("IT WENT INTO EXCEPTTTTTTTTT");
-                return new JsonResult(exception) { StatusCode = 404 };
-            }
-            return null;
+            return await ProcessRequestAsync("DELETE", all, null).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpPut]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PutAsync(string all)
+        public async Task<IActionResult> PutAsync(string all, [FromBody] object body)
         {
-            GraphServiceClient _graphServiceClient = new GraphServiceClient(new DelegateAuthenticationProvider(
-                async requestMessage =>
-                    {
-                        // Passing tenant ID to the sample auth provider to use as a cache key
-                        string accessToken = GetTokenAsync("").Result.ToString();
-                        // Append the access token to the request
-                        requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    }));
-
-            var qs = HttpContext.Request.QueryString;
-            Console.WriteLine(HttpContext);
-
-            var url = $"{GetBaseUrlWithoutVersion(_graphServiceClient)}/{all}{qs.ToUriComponent()}";
-
-            Console.WriteLine("IS IT IN HERE");
-
-            var request = new BaseRequest(url, _graphServiceClient, null)
-            {
-                Method = "DELETE",
-                ContentType = HttpContext.Request.ContentType,
-            };
-
-            var contentType = "application/json";
-            object content = null;
-            try
-            {
-                using (var response = await request.SendRequestAsync(content?.ToString(), CancellationToken.None , HttpCompletionOption.ResponseContentRead).ConfigureAwait(false))
-                {
-                    response.Content.Headers.TryGetValues("content-type", out var contentTypes);
-
-                    contentType = contentTypes?.FirstOrDefault() ?? contentType;
-
-                    var byteArrayContent = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                    Console.WriteLine(byteArrayContent);
-                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.OK, contentType, new ByteArrayContent(byteArrayContent)));
-                }
-            }
-            catch (ServiceException ex)
-            {
-                return new HttpResponseMessageResult(ReturnHttpResponseMessage(ex.StatusCode, contentType, new StringContent(ex.Error.ToString())));
-            }
-        }
-
-        private static HttpResponseMessage ReturnHttpResponseMessage(HttpStatusCode httpStatusCode, string contentType, HttpContent httpContent)
-        {
-            var httpResponseMessage = new HttpResponseMessage(httpStatusCode)
-            {
-                Content = httpContent
-            };
-
-            try
-            {
-                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-            }
-            catch
-            {
-                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-            }
-
-            return httpResponseMessage;
+            return await ProcessRequestAsync("PUT", all, body).ConfigureAwait(false);
         }
 
         private string GetBaseUrlWithoutVersion(GraphServiceClient graphClient)
@@ -196,7 +121,74 @@ namespace GraphWebApi.Controllers
 
         private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content)
         {
-            return Ok();
+            GraphServiceClient _graphServiceClient = new GraphServiceClient(new DelegateAuthenticationProvider(
+             async requestMessage =>
+             {
+                 // Passing tenant ID to the sample auth provider to use as a cache key
+                 string accessToken = GetTokenAsync("").Result.ToString();
+                 // Append the access token to the request
+                 requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+             }));
+
+            var qs = HttpContext.Request.QueryString;
+            Console.WriteLine(HttpContext);
+
+            var url = $"{GetBaseUrlWithoutVersion(_graphServiceClient)}/{all}{qs.ToUriComponent()}";
+
+            Console.WriteLine("IS IT IN HERE");
+
+            var request = new BaseRequest(url, _graphServiceClient, null)
+            {
+                Method = method,
+                ContentType = HttpContext.Request.ContentType,
+            };
+
+            var neededHeaders = Request.Headers.Where(h => h.Key.ToLower() == "if-match" || h.Key.ToLower() == "consistencylevel").ToList();
+            if (neededHeaders.Count() > 0)
+            {
+                foreach (var header in neededHeaders)
+                {
+                    request.Headers.Add(new HeaderOption(header.Key, string.Join(",", header.Value)));
+                }
+            }
+
+            var contentType = "application/json";
+            try
+            {
+                using (var response = await request.SendRequestAsync(content?.ToString(), CancellationToken.None, HttpCompletionOption.ResponseContentRead).ConfigureAwait(false))
+                {
+                    response.Content.Headers.TryGetValues("content-type", out var contentTypes);
+
+                    contentType = contentTypes?.FirstOrDefault() ?? contentType;
+
+                    var byteArrayContent = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                    Console.WriteLine(byteArrayContent);
+                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.OK, contentType, new ByteArrayContent(byteArrayContent)));
+                }
+            }
+            catch (ServiceException ex)
+            {
+                return new HttpResponseMessageResult(ReturnHttpResponseMessage(ex.StatusCode, contentType, new StringContent(ex.Error.ToString())));
+            }
+        }
+
+        private static HttpResponseMessage ReturnHttpResponseMessage(HttpStatusCode httpStatusCode, string contentType, HttpContent httpContent)
+        {
+            var httpResponseMessage = new HttpResponseMessage(httpStatusCode)
+            {
+                Content = httpContent
+            };
+
+            try
+            {
+                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+            }
+            catch
+            {
+                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            }
+
+            return httpResponseMessage;
         }
     }
 }
