@@ -14,18 +14,20 @@ using System.Net;
 using Microsoft.Identity.Client;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
+using GraphExplorerAppModeService.Services;
 
 namespace GraphWebApi.Controllers
 {
     [ApiController]
     public class GraphExplorerAppModeController : ControllerBase
     {
-        private readonly ITokenAcquisition tokenAcquisition;
-        private readonly GraphServiceClient _graphServiceClient;
-        public GraphExplorerAppModeController(ITokenAcquisition tokenAcquisition, GraphServiceClient graphServiceClient)
+        private readonly IGraphAppAuthProvider _graphClient;
+        private readonly ITokenAcquisition _tokenAcquisition;
+
+        public GraphExplorerAppModeController(ITokenAcquisition tokenAcquisition, IGraphAppAuthProvider graphServiceClient)
         {
-            this.tokenAcquisition = tokenAcquisition;
-            this._graphServiceClient = graphServiceClient;
+            this._graphClient = graphServiceClient;
+            this._tokenAcquisition = tokenAcquisition;
         }
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
@@ -36,17 +38,14 @@ namespace GraphWebApi.Controllers
             return await this.ProcessRequestAsync("GET", all, null).ConfigureAwait(false);
         }
 
-        [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/token")]
-        [HttpGet]
-        [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<string> GetTokenAsync(string all)
+        private async Task<string> GetTokenAsync()
         {
             // Acquire the access token.
             string scopes = "https://graph.microsoft.com/.default";
 
-            return await tokenAcquisition.GetAccessTokenForAppAsync(scopes);
-        } 
+            return await _tokenAcquisition.GetAccessTokenForAppAsync(scopes);
+        }
+
 
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
@@ -121,21 +120,11 @@ namespace GraphWebApi.Controllers
 
         private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content)
         {
-            GraphServiceClient _graphServiceClient = new GraphServiceClient(new DelegateAuthenticationProvider(
-             async requestMessage =>
-             {
-                 // Passing tenant ID to the sample auth provider to use as a cache key
-                 string accessToken = GetTokenAsync("").Result.ToString();
-                 // Append the access token to the request
-                 requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-             }));
+            GraphServiceClient _graphServiceClient = _graphClient.GetAuthenticatedGraphClient(GetTokenAsync().Result.ToString());
 
             var qs = HttpContext.Request.QueryString;
-            Console.WriteLine(HttpContext);
 
             var url = $"{GetBaseUrlWithoutVersion(_graphServiceClient)}/{all}{qs.ToUriComponent()}";
-
-            Console.WriteLine("IS IT IN HERE");
 
             var request = new BaseRequest(url, _graphServiceClient, null)
             {
