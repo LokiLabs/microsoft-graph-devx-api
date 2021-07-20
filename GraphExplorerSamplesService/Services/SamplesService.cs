@@ -220,7 +220,7 @@ namespace GraphExplorerSamplesService.Services
 
             // Add back 'Getting Started' to the top of the list
             sortedSampleQueriesList.SampleQueries.AddRange(sampleQueriesList.SampleQueries.FindAll(s => s.Category == "Getting Started"));
-            sortedSampleQueriesList.TeamsAppSampleQueries.AddRange(sampleQueriesList.SampleQueries.FindAll(s => s.Category == "Getting Started"));
+            sortedSampleQueriesList.TeamsAppSampleQueries.AddRange(sampleQueriesList.TeamsAppSampleQueries.FindAll(s => s.Category == "Getting Started"));
 
             // Add the rest of the sample queries
             sortedSampleQueriesList.SampleQueries.AddRange(sortedSampleQueries);
