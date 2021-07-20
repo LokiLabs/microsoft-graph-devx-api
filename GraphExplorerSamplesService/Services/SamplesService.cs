@@ -211,13 +211,20 @@ namespace GraphExplorerSamplesService.Services
                 .Where(s => s.Category != "Getting Started") // skipped, as it should always be the top-most sample query in the list
                 .ToList();
 
+            List<SampleQueryModel> teamsAppSortedSampleQueries = sampleQueriesList.TeamsAppSampleQueries
+                .OrderBy(s => s.Category)
+                .Where(s => s.Category != "Getting Started") // skipped, as it should always be the top-most sample query in the list
+                .ToList();
+
             SampleQueriesList sortedSampleQueriesList = new SampleQueriesList();
 
             // Add back 'Getting Started' to the top of the list
             sortedSampleQueriesList.SampleQueries.AddRange(sampleQueriesList.SampleQueries.FindAll(s => s.Category == "Getting Started"));
+            sortedSampleQueriesList.TeamsAppSampleQueries.AddRange(sampleQueriesList.SampleQueries.FindAll(s => s.Category == "Getting Started"));
 
             // Add the rest of the sample queries
             sortedSampleQueriesList.SampleQueries.AddRange(sortedSampleQueries);
+            sortedSampleQueriesList.SampleQueries.AddRange(teamsAppSortedSampleQueries);
 
             return sortedSampleQueriesList;
         }
