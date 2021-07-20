@@ -53,7 +53,6 @@ namespace GraphWebApi.Controllers
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
         public async Task<IActionResult> PostAsync(string all, [FromBody] object body)
         {
-            Console.WriteLine(body);
             return await ProcessRequestAsync("POST", all, body).ConfigureAwait(false);
         }
 
