@@ -51,6 +51,7 @@ namespace GraphWebApi
             services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
                 .AddMicrosoftIdentityWebApp(Configuration, "AzureAd")
                 .EnableTokenAcquisitionToCallDownstreamApi()
+                .AddMicrosoftGraph(Configuration.GetSection("GraphV1"))
                 .AddInMemoryTokenCaches();
             services.AddDistributedMemoryCache();
             services.AddAuthentication(option =>
