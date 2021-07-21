@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using GraphExplorerAppModeService.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,6 +14,7 @@ using Microsoft.Identity.Client;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 using GraphExplorerAppModeService.Services;
+using GraphExplorerAppModeService.Interfaces;
 
 namespace GraphWebApi.Controllers
 {
@@ -30,47 +30,47 @@ namespace GraphWebApi.Controllers
             this._tokenAcquisition = tokenAcquisition;
         }
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{*all}")]
+        [Route("graphproxy/{tenantId}/{*all}")]
         [HttpGet]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> GetAsync(string all)
+        public async Task<IActionResult> GetAsync(string all, string tenantId)
         {
-            return await this.ProcessRequestAsync("GET", all, null).ConfigureAwait(false);
+            return await this.ProcessRequestAsync("GET", all, null, tenantId).ConfigureAwait(false);
         }
 
-        private async Task<string> GetTokenAsync()
+        private async Task<string> GetTokenAsync(string tenantId)
         {
             // Acquire the access token.
             string scopes = "https://graph.microsoft.com/.default";
 
-            return await _tokenAcquisition.GetAccessTokenForAppAsync(scopes);
+            return await _tokenAcquisition.GetAccessTokenForAppAsync(scopes, tenantId, null);
         }
 
 
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{*all}")]
+        [Route("graphproxy/{tenantId}/{*all}")]
         [HttpPost]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PostAsync(string all, [FromBody] object body)
+        public async Task<IActionResult> PostAsync(string all, [FromBody] object body, string tenantId)
         {
-            return await ProcessRequestAsync("POST", all, body).ConfigureAwait(false);
+            return await ProcessRequestAsync("POST", all, body, tenantId).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{*all}")]
+        [Route("graphproxy/{tenantId}/{*all}")]
         [HttpDelete]
-        public async Task<IActionResult> DeleteAsync(string all)
+        public async Task<IActionResult> DeleteAsync(string all, string tenantId)
         {
-            return await ProcessRequestAsync("DELETE", all, null).ConfigureAwait(false);
+            return await ProcessRequestAsync("DELETE", all, null, tenantId).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{*all}")]
+        [Route("graphproxy/{tenantId}/{*all}")]
         [HttpPut]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PutAsync(string all, [FromBody] object body)
+        public async Task<IActionResult> PutAsync(string all, [FromBody] object body, string tenantId)
         {
-            return await ProcessRequestAsync("PUT", all, body).ConfigureAwait(false);
+            return await ProcessRequestAsync("PUT", all, body, tenantId).ConfigureAwait(false);
         }
 
         private string GetBaseUrlWithoutVersion(GraphServiceClient graphClient)
@@ -109,17 +109,17 @@ namespace GraphWebApi.Controllers
         }
 
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{*all}")]
+        [Route("graphproxy/{tenantId}/{*all}")]
         [HttpPatch]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PatchAsync(string all, [FromBody] object body)
+        public async Task<IActionResult> PatchAsync(string all, [FromBody] object body, string tenantId)
         {
-            return await ProcessRequestAsync("PATCH", all, body).ConfigureAwait(false);
+            return await ProcessRequestAsync("PATCH", all, body, tenantId).ConfigureAwait(false);
         }
 
-        private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content)
+        private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content, string tenantId)
         {
-            GraphServiceClient _graphServiceClient = _graphClient.GetAuthenticatedGraphClient(GetTokenAsync().Result.ToString());
+            GraphServiceClient _graphServiceClient = _graphClient.GetAuthenticatedGraphClient(GetTokenAsync(tenantId).Result.ToString());
 
             var qs = HttpContext.Request.QueryString;
 
