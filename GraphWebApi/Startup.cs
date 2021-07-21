@@ -27,6 +27,7 @@ using Microsoft.Extensions.Options;
 using TelemetrySanitizerService;
 using OpenAPIService.Interfaces;
 using OpenAPIService;
+using System.Threading.Tasks;
 
 namespace GraphWebApi
 {
@@ -56,6 +57,16 @@ namespace GraphWebApi
                        {
                            ValidAudience = Configuration["AzureAd:Audience"],
                            ValidIssuer = Configuration["AzureAd:Issuer"]
+                       };
+                       // This is to allow local testing using postman
+                       // To be removed when merged into dev
+                       option.Events = new JwtBearerEvents()
+                       {
+                           OnAuthenticationFailed = context =>
+                           {
+                               context.NoResult();
+                               return Task.FromResult(0);
+                           }
                        };
                    });
 
