@@ -224,7 +224,7 @@ namespace GraphExplorerSamplesService.Services
 
             // Add the rest of the sample queries
             sortedSampleQueriesList.SampleQueries.AddRange(sortedSampleQueries);
-            sortedSampleQueriesList.SampleQueries.AddRange(teamsAppSortedSampleQueries);
+            sortedSampleQueriesList.TeamsAppSampleQueries.AddRange(teamsAppSortedSampleQueries);
 
             return sortedSampleQueriesList;
         }
