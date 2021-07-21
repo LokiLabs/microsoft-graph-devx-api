@@ -28,11 +28,15 @@ namespace GraphWebApi.Controllers
             return await ProcessRequestAsync("GET", all, null).ConfigureAwait(false);
         }
 
-        private async Task<string> GetTokenAsync(string tenantId)
+        [Route("api/[controller]/{*all}")]
+        [Route("graphproxy/token")]
+        [HttpGet]
+        [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
+        public async Task<string> GetTokenAsync(string all)
         {
             // Acquire the access token.
             string scopes = "https://graph.microsoft.com/.default";
-            return await tokenAcquisition.GetAccessTokenForAppAsync(scopes, tenantId, null);
+            return await tokenAcquisition.GetAccessTokenForAppAsync(scopes);
         }
 
         [Route("api/[controller]/{*all}")]
