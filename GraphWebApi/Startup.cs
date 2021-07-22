@@ -30,6 +30,8 @@ using OpenAPIService;
 using System.Threading.Tasks;
 using Microsoft.Identity.Web;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using GraphExplorerAppModeService.Services;
+using GraphExplorerAppModeService.Interfaces;
 
 namespace GraphWebApi
 {
@@ -51,6 +53,7 @@ namespace GraphWebApi
             services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
                 .AddMicrosoftIdentityWebApp(Configuration, "AzureAd")
                 .EnableTokenAcquisitionToCallDownstreamApi()
+                .AddMicrosoftGraph(Configuration.GetSection("GraphV1"))
                 .AddInMemoryTokenCaches();
             services.AddDistributedMemoryCache();
             services.AddAuthentication(option =>
@@ -103,6 +106,7 @@ namespace GraphWebApi
 
             services.AddMemoryCache();
             services.AddSingleton<ISnippetsGenerator, SnippetsGenerator>();
+            services.AddSingleton<IGraphAppAuthProvider, GraphAppAuthProvider>();
             services.AddSingleton<IFileUtility, AzureBlobStorageUtility>();
             services.AddSingleton<IPermissionsStore, PermissionsStore>();
             services.AddSingleton<ISamplesStore, SamplesStore>();
