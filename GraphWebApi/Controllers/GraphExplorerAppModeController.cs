@@ -63,7 +63,7 @@ namespace GraphWebApi.Controllers
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpDelete]
-        public async Task<IActionResult> DeleteAsync(string all)
+        public async Task<IActionResult> DeleteAsync(string all, [FromHeader] string Authorization)
         {
             return await ProcessRequestAsync("DELETE", all, null, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
