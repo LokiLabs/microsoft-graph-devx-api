@@ -28,6 +28,8 @@ using TelemetrySanitizerService;
 using OpenAPIService.Interfaces;
 using OpenAPIService;
 using System.Threading.Tasks;
+using Microsoft.Identity.Web;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 
 namespace GraphWebApi
 {
@@ -46,6 +48,11 @@ namespace GraphWebApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+                .AddMicrosoftIdentityWebApp(Configuration, "AzureAd")
+                .EnableTokenAcquisitionToCallDownstreamApi()
+                .AddInMemoryTokenCaches();
+            services.AddDistributedMemoryCache();
             services.AddAuthentication(option =>
             {
                 option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;

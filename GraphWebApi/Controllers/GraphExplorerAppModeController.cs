@@ -6,18 +6,37 @@ using GraphExplorerAppModeService.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Identity.Web;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace GraphWebApi.Controllers
 {
     [ApiController]
     public class GraphExplorerAppModeController : ControllerBase
     {
+        private readonly ITokenAcquisition tokenAcquisition;
+        public GraphExplorerAppModeController(ITokenAcquisition tokenAcquisition)
+        {
+            this.tokenAcquisition = tokenAcquisition;
+        }
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpGet]
         public async Task<IActionResult> GetAsync(string all, [FromHeader] string Authorization)
         {
             return await ProcessRequestAsync("GET", all, null, Authorization).ConfigureAwait(false);
+        }
+
+        [Route("api/[controller]/{*all}")]
+        [Route("graphproxy/token/{tenantId}")]
+        [HttpGet]
+        [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
+        public async Task<string> GetTokenAsync(string tenantId)
+        {
+            // Acquire the access token.
+            string scopes = "https://graph.microsoft.com/.default";
+            return await tokenAcquisition.GetAccessTokenForAppAsync(scopes, tenantId, null);
         }
 
         [Route("api/[controller]/{*all}")]
