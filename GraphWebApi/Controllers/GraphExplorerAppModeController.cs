@@ -15,6 +15,7 @@ using System.Threading;
 using Microsoft.Extensions.Primitives;
 using GraphExplorerAppModeService.Services;
 using GraphExplorerAppModeService.Interfaces;
+using Microsoft.Extensions.Configuration;
 
 namespace GraphWebApi.Controllers
 {
@@ -24,18 +25,21 @@ namespace GraphWebApi.Controllers
         private readonly IGraphAppAuthProvider _graphClient;
         private readonly ITokenAcquisition _tokenAcquisition;
 
-        public GraphExplorerAppModeController(ITokenAcquisition tokenAcquisition, IGraphAppAuthProvider graphServiceClient)
+        private readonly IConfiguration _config;
+
+        public GraphExplorerAppModeController(IConfiguration configuration, ITokenAcquisition tokenAcquisition, IGraphAppAuthProvider graphServiceClient)
         {
             this._graphClient = graphServiceClient;
             this._tokenAcquisition = tokenAcquisition;
+            this._config = configuration;
         }
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{tenantId}/{*all}")]
+        [Route("graphproxy/{*all}")]
         [HttpGet]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
         public async Task<IActionResult> GetAsync(string all, string tenantId)
         {
-            return await this.ProcessRequestAsync("GET", all, null, tenantId).ConfigureAwait(false);
+            return await this.ProcessRequestAsync("GET", all, null, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
 
         private async Task<string> GetTokenAsync(string tenantId)
@@ -48,29 +52,29 @@ namespace GraphWebApi.Controllers
 
 
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{tenantId}/{*all}")]
+        [Route("graphproxy/{*all}")]
         [HttpPost]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
         public async Task<IActionResult> PostAsync(string all, [FromBody] object body, string tenantId)
         {
-            return await ProcessRequestAsync("POST", all, body, tenantId).ConfigureAwait(false);
+            return await ProcessRequestAsync("POST", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{tenantId}/{*all}")]
+        [Route("graphproxy/{*all}")]
         [HttpDelete]
         public async Task<IActionResult> DeleteAsync(string all, string tenantId)
         {
-            return await ProcessRequestAsync("DELETE", all, null, tenantId).ConfigureAwait(false);
+            return await ProcessRequestAsync("DELETE", all, null, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{tenantId}/{*all}")]
+        [Route("graphproxy/{*all}")]
         [HttpPut]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
         public async Task<IActionResult> PutAsync(string all, [FromBody] object body, string tenantId)
         {
-            return await ProcessRequestAsync("PUT", all, body, tenantId).ConfigureAwait(false);
+            return await ProcessRequestAsync("PUT", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
 
         private string GetBaseUrlWithoutVersion(GraphServiceClient graphClient)
@@ -109,12 +113,12 @@ namespace GraphWebApi.Controllers
         }
 
         [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{tenantId}/{*all}")]
+        [Route("graphproxy/{*all}")]
         [HttpPatch]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
         public async Task<IActionResult> PatchAsync(string all, [FromBody] object body, string tenantId)
         {
-            return await ProcessRequestAsync("PATCH", all, body, tenantId).ConfigureAwait(false);
+            return await ProcessRequestAsync("PATCH", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
 
         private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content, string tenantId)
