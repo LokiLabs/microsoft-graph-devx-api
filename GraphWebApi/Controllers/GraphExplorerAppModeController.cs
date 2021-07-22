@@ -37,7 +37,7 @@ namespace GraphWebApi.Controllers
         [Route("graphproxy/{*all}")]
         [HttpGet]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> GetAsync(string all, string tenantId)
+        public async Task<IActionResult> GetAsync(string all)
         {
             return await this.ProcessRequestAsync("GET", all, null, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
@@ -55,7 +55,7 @@ namespace GraphWebApi.Controllers
         [Route("graphproxy/{*all}")]
         [HttpPost]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PostAsync(string all, [FromBody] object body, string tenantId)
+        public async Task<IActionResult> PostAsync(string all, [FromBody] object body)
         {
             return await ProcessRequestAsync("POST", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
@@ -63,7 +63,7 @@ namespace GraphWebApi.Controllers
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpDelete]
-        public async Task<IActionResult> DeleteAsync(string all, string tenantId)
+        public async Task<IActionResult> DeleteAsync(string all)
         {
             return await ProcessRequestAsync("DELETE", all, null, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
@@ -72,7 +72,7 @@ namespace GraphWebApi.Controllers
         [Route("graphproxy/{*all}")]
         [HttpPut]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PutAsync(string all, [FromBody] object body, string tenantId)
+        public async Task<IActionResult> PutAsync(string all, [FromBody] object body)
         {
             return await ProcessRequestAsync("PUT", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
@@ -116,7 +116,7 @@ namespace GraphWebApi.Controllers
         [Route("graphproxy/{*all}")]
         [HttpPatch]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PatchAsync(string all, [FromBody] object body, string tenantId)
+        public async Task<IActionResult> PatchAsync(string all, [FromBody] object body)
         {
             return await ProcessRequestAsync("PATCH", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
         }
