@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,54 +9,47 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using Microsoft.Graph;
 using System.Net;
-using Microsoft.Identity.Client;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 using GraphExplorerAppModeService.Services;
 using GraphExplorerAppModeService.Interfaces;
 using Microsoft.Extensions.Configuration;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace GraphWebApi.Controllers
 {
     [ApiController]
     public class GraphExplorerAppModeController : ControllerBase
     {
-        private readonly IGraphAppAuthProvider _graphClient;
+        private readonly IGraphAppAuthProvider _graphAuthClient;
         private readonly ITokenAcquisition _tokenAcquisition;
-
         private readonly IConfiguration _config;
+        private readonly IGraphService _graphService;
 
-        public GraphExplorerAppModeController(IConfiguration configuration, ITokenAcquisition tokenAcquisition, IGraphAppAuthProvider graphServiceClient)
+        public GraphExplorerAppModeController(IConfiguration configuration, ITokenAcquisition tokenAcquisition, IGraphAppAuthProvider graphServiceClient, IGraphService graphService)
         {
-            this._graphClient = graphServiceClient;
+            this._graphAuthClient = graphServiceClient;
             this._tokenAcquisition = tokenAcquisition;
             this._config = configuration;
+            this._graphService = graphService;
         }
+
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpGet]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> GetAsync(string all)
+        public async Task<IActionResult> GetAsync(string all, [FromHeader] string Authorization)
         {
-            return await this.ProcessRequestAsync("GET", all, null, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
+            return await this.ProcessRequestAsync("GET", all, null, Authorization).ConfigureAwait(false);
         }
-
-        private async Task<string> GetTokenAsync(string tenantId)
-        {
-            // Acquire the access token.
-            string scopes = "https://graph.microsoft.com/.default";
-
-            return await _tokenAcquisition.GetAccessTokenForAppAsync(scopes, tenantId, null);
-        }
-
 
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpPost]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PostAsync(string all, [FromBody] object body)
+        public async Task<IActionResult> PostAsync(string all, [FromBody] object body, [FromHeader] string Authorization)
         {
-            return await ProcessRequestAsync("POST", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
+            return await ProcessRequestAsync("POST", all, body, Authorization).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
@@ -65,16 +57,134 @@ namespace GraphWebApi.Controllers
         [HttpDelete]
         public async Task<IActionResult> DeleteAsync(string all, [FromHeader] string Authorization)
         {
-            return await ProcessRequestAsync("DELETE", all, null, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
+            return await ProcessRequestAsync("DELETE", all, null, Authorization).ConfigureAwait(false);
         }
 
         [Route("api/[controller]/{*all}")]
         [Route("graphproxy/{*all}")]
         [HttpPut]
         [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PutAsync(string all, [FromBody] object body)
+        public async Task<IActionResult> PutAsync(string all, [FromBody] object body, [FromHeader] string Authorization)
         {
-            return await ProcessRequestAsync("PUT", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
+            return await ProcessRequestAsync("PUT", all, body, Authorization).ConfigureAwait(false);
+        }
+
+        [Route("api/[controller]/{*all}")]
+        [Route("graphproxy/{*all}")]
+        [HttpPatch]
+        [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
+        public async Task<IActionResult> PatchAsync(string all, [FromBody] object body, [FromHeader] string Authorization)
+        {
+            return await ProcessRequestAsync("PATCH", all, body, Authorization).ConfigureAwait(false);
+        }
+
+        private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content, string Authorization)
+        {
+            // decode JWT Auth token
+            string userToken = Authorization.Split(" ")[1];
+            JwtSecurityToken authToken = new JwtSecurityTokenHandler().ReadJwtToken(userToken);
+
+            string tenantId = "8d87ccfa-0037-44f0-ac71-31c71ac81a2b";
+            string clientId = "8d87ccfa-0037-44f0-ac71-31c71ac81a2b";
+
+            string errorContentType = "application/json";
+            try
+            {
+                // Authentication provider using a generated application context token
+                GraphServiceClient graphServiceClient = _graphAuthClient.GetAuthenticatedGraphClient(GetTokenAsync(tenantId).Result.ToString());
+
+                // Processing the graph request
+                GraphResponse processedGraphRequest = await ProcessGraphRequest(method, all, content, graphServiceClient);
+                
+                // Authentication provider using user's delegated token
+                GraphServiceClient userGraphServiceClient = _graphAuthClient.GetAuthenticatedGraphClient(userToken);
+
+                // Check if user owns the resource in question 
+                bool userOwnership = await _graphService.VerifyOwnership(userGraphServiceClient, all, clientId);
+
+                if (userOwnership) {
+                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.OK, processedGraphRequest.contentType, new ByteArrayContent(processedGraphRequest.contentByteArray)));
+                } else
+                {
+                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.Forbidden, errorContentType, new StringContent("")));
+                }
+            }
+            catch (ServiceException ex)
+            {
+                return new HttpResponseMessageResult(ReturnHttpResponseMessage(ex.StatusCode, errorContentType, new StringContent(ex.Error.ToString())));
+            }
+
+        }
+
+        struct GraphResponse
+        {
+            public string contentType;
+            public byte[] contentByteArray;
+        }
+
+        private async Task<GraphResponse> ProcessGraphRequest(string method, string all, object content, GraphServiceClient graphClient)
+        {
+            var url = $"{GetBaseUrlWithoutVersion(graphClient)}/{all}{HttpContext.Request.QueryString.ToUriComponent()}";
+
+            var request = new BaseRequest(url, graphClient, null)
+            {
+                Method = method,
+                ContentType = HttpContext.Request.ContentType,
+            };
+
+            var neededHeaders = Request.Headers.Where(h => h.Key.ToLower() == "if-match" || h.Key.ToLower() == "consistencylevel").ToList();
+            if (neededHeaders.Count() > 0)
+            {
+                foreach (var header in neededHeaders)
+                {
+                    request.Headers.Add(new HeaderOption(header.Key, string.Join(",", header.Value)));
+                }
+            }
+
+            var contentType = "application/json";
+           
+            using (var response = await request.SendRequestAsync(content?.ToString(), CancellationToken.None, HttpCompletionOption.ResponseContentRead).ConfigureAwait(false))
+            {
+                response.Content.Headers.TryGetValues("content-type", out var contentTypes);
+
+                contentType = contentTypes?.FirstOrDefault() ?? contentType;
+
+                var byteArrayContent = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                Console.WriteLine(byteArrayContent);
+
+                return new GraphResponse
+                {
+                    contentByteArray = byteArrayContent,
+                    contentType = contentType
+                };
+            }
+        }
+
+        // Acquire the application context access token.
+        private async Task<string> GetTokenAsync(string tenantId)
+        {
+            string scopes = "https://graph.microsoft.com/.default";
+
+            return await _tokenAcquisition.GetAccessTokenForAppAsync(scopes, tenantId, null);
+        }
+
+        private static HttpResponseMessage ReturnHttpResponseMessage(HttpStatusCode httpStatusCode, string contentType, HttpContent httpContent)
+        {
+            var httpResponseMessage = new HttpResponseMessage(httpStatusCode)
+            {
+                Content = httpContent
+            };
+
+            try
+            {
+                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+            }
+            catch
+            {
+                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            }
+
+            return httpResponseMessage;
         }
 
         private string GetBaseUrlWithoutVersion(GraphServiceClient graphClient)
@@ -112,75 +222,6 @@ namespace GraphWebApi.Controllers
             }
         }
 
-        [Route("api/[controller]/{*all}")]
-        [Route("graphproxy/{*all}")]
-        [HttpPatch]
-        [AuthorizeForScopes(Scopes = new[] { "https://graph.microsoft.com/.default" })]
-        public async Task<IActionResult> PatchAsync(string all, [FromBody] object body)
-        {
-            return await ProcessRequestAsync("PATCH", all, body, _config.GetSection("AzureAd").GetSection("TenantId").Value).ConfigureAwait(false);
-        }
 
-        private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content, string tenantId)
-        {
-            GraphServiceClient _graphServiceClient = _graphClient.GetAuthenticatedGraphClient(GetTokenAsync(tenantId).Result.ToString());
-
-            var qs = HttpContext.Request.QueryString;
-
-            var url = $"{GetBaseUrlWithoutVersion(_graphServiceClient)}/{all}{qs.ToUriComponent()}";
-
-            var request = new BaseRequest(url, _graphServiceClient, null)
-            {
-                Method = method,
-                ContentType = HttpContext.Request.ContentType,
-            };
-
-            var neededHeaders = Request.Headers.Where(h => h.Key.ToLower() == "if-match" || h.Key.ToLower() == "consistencylevel").ToList();
-            if (neededHeaders.Count() > 0)
-            {
-                foreach (var header in neededHeaders)
-                {
-                    request.Headers.Add(new HeaderOption(header.Key, string.Join(",", header.Value)));
-                }
-            }
-
-            var contentType = "application/json";
-            try
-            {
-                using (var response = await request.SendRequestAsync(content?.ToString(), CancellationToken.None, HttpCompletionOption.ResponseContentRead).ConfigureAwait(false))
-                {
-                    response.Content.Headers.TryGetValues("content-type", out var contentTypes);
-
-                    contentType = contentTypes?.FirstOrDefault() ?? contentType;
-
-                    var byteArrayContent = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                    Console.WriteLine(byteArrayContent);
-                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.OK, contentType, new ByteArrayContent(byteArrayContent)));
-                }
-            }
-            catch (ServiceException ex)
-            {
-                return new HttpResponseMessageResult(ReturnHttpResponseMessage(ex.StatusCode, contentType, new StringContent(ex.Error.ToString())));
-            }
-        }
-
-        private static HttpResponseMessage ReturnHttpResponseMessage(HttpStatusCode httpStatusCode, string contentType, HttpContent httpContent)
-        {
-            var httpResponseMessage = new HttpResponseMessage(httpStatusCode)
-            {
-                Content = httpContent
-            };
-
-            try
-            {
-                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-            }
-            catch
-            {
-                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-            }
-
-            return httpResponseMessage;
-        }
     }
 }

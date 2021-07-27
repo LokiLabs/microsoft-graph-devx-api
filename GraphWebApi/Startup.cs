@@ -107,6 +107,7 @@ namespace GraphWebApi
             services.AddMemoryCache();
             services.AddSingleton<ISnippetsGenerator, SnippetsGenerator>();
             services.AddSingleton<IGraphAppAuthProvider, GraphAppAuthProvider>();
+            services.AddSingleton<IGraphService, GraphService>();
             services.AddSingleton<IFileUtility, AzureBlobStorageUtility>();
             services.AddSingleton<IPermissionsStore, PermissionsStore>();
             services.AddSingleton<ISamplesStore, SamplesStore>();
