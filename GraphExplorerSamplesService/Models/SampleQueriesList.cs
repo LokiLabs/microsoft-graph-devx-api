@@ -11,10 +11,12 @@ namespace GraphExplorerSamplesService.Models
         /// A list of <see cref="SampleQueryModel"/> objects
         /// </summary>
         public List<SampleQueryModel> SampleQueries { get; set; }
+        public List<SampleQueryModel> TeamsAppSampleQueries { get; set; }
 
         public SampleQueriesList()
         {
             SampleQueries = new List<SampleQueryModel>();
+            TeamsAppSampleQueries = new List<SampleQueryModel>();
         }
     }
 }
