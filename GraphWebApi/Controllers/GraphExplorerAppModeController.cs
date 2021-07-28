@@ -15,6 +15,9 @@ using GraphExplorerAppModeService.Services;
 using GraphExplorerAppModeService.Interfaces;
 using Microsoft.Extensions.Configuration;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Logging;
 
 namespace GraphWebApi.Controllers
 {
@@ -82,10 +85,11 @@ namespace GraphWebApi.Controllers
         {
             // decode JWT Auth token
             string userToken = Authorization.Split(" ")[1];
-            JwtSecurityToken authToken = new JwtSecurityTokenHandler().ReadJwtToken(userToken);
-
-            string tenantId = "8d87ccfa-0037-44f0-ac71-31c71ac81a2b";
-            string clientId = "8d87ccfa-0037-44f0-ac71-31c71ac81a2b";
+            
+            // Retrieve tenantId and clientId from token 
+            IEnumerable<Claim> jwtTokenClaims = new JwtSecurityToken(userToken).Claims;
+            string tenantId = jwtTokenClaims.First(claim => claim.Type == "tid").Value;
+            string clientId = jwtTokenClaims.First(claim => claim.Type == "oid").Value;
 
             string errorContentType = "application/json";
             try
