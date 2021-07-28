@@ -70,7 +70,6 @@ namespace GraphExplorerAppModeService.Services
                 foreach (AadUserConversationMember member in members)
                 {
                     if (clientId == member.UserId && member.Roles.Contains("owner")) return true;
-                    Debug.WriteLine(member);
                 }
             }
             catch (ServiceException e)

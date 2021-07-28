@@ -26,14 +26,12 @@ namespace GraphWebApi.Controllers
     {
         private readonly IGraphAppAuthProvider _graphAuthClient;
         private readonly ITokenAcquisition _tokenAcquisition;
-        private readonly IConfiguration _config;
         private readonly IGraphService _graphService;
 
-        public GraphExplorerAppModeController(IConfiguration configuration, ITokenAcquisition tokenAcquisition, IGraphAppAuthProvider graphServiceClient, IGraphService graphService)
+        public GraphExplorerAppModeController(ITokenAcquisition tokenAcquisition, IGraphAppAuthProvider graphServiceClient, IGraphService graphService)
         {
             this._graphAuthClient = graphServiceClient;
             this._tokenAcquisition = tokenAcquisition;
-            this._config = configuration;
             this._graphService = graphService;
         }
 
@@ -225,7 +223,5 @@ namespace GraphWebApi.Controllers
                 }
             }
         }
-
-
     }
 }
