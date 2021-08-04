@@ -152,7 +152,6 @@ namespace GraphWebApi.Controllers
                 contentType = contentTypes?.FirstOrDefault() ?? contentType;
 
                 var byteArrayContent = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                Console.WriteLine(byteArrayContent);
 
                 return new GraphResponse
                 {

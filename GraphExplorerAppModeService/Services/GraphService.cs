@@ -18,11 +18,7 @@ namespace GraphExplorerAppModeService.Services
         /// <summary>
         /// ErrorMessage will contain the error message from the Graph Client call.
         /// </summary>
-        public string ErrorMessage
-        {
-            get { return errorMessage; }
-            set { errorMessage = value; }
-        }
+        public string ErrorMessage { get; set; }
 
         public async Task<bool> VerifyOwnership(GraphServiceClient graphClient, string query, string clientId)
         {
