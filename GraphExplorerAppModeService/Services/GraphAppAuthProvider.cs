@@ -1,14 +1,6 @@
 ﻿using GraphExplorerAppModeService.Interfaces;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Graph;
-using Microsoft.Identity.Web;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
-
 
 namespace GraphExplorerAppModeService.Services
 {
