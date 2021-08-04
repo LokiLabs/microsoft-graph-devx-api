@@ -18,6 +18,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Logging;
+using Newtonsoft.Json;
 
 namespace GraphWebApi.Controllers
 {
@@ -78,7 +79,6 @@ namespace GraphWebApi.Controllers
         {
             return await ProcessRequestAsync("PATCH", all, body, Authorization).ConfigureAwait(false);
         }
-
         private async Task<IActionResult> ProcessRequestAsync(string method, string all, object content, string Authorization)
         {
             // decode JWT Auth token
@@ -108,12 +108,15 @@ namespace GraphWebApi.Controllers
                     return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.OK, processedGraphRequest.contentType, new ByteArrayContent(processedGraphRequest.contentByteArray)));
                 } else
                 {
-                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.Forbidden, errorContentType, new StringContent("")));
+                    Error error = new Error();
+                    error.Code = "Forbidden";
+                    error.Message = "The logged in user is not the owner of the resource.";
+                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.Forbidden, errorContentType, new StringContent(JsonConvert.SerializeObject(error))));
                 }
             }
             catch (ServiceException ex)
             {
-                return new HttpResponseMessageResult(ReturnHttpResponseMessage(ex.StatusCode, errorContentType, new StringContent(ex.Error.ToString())));
+                return new HttpResponseMessageResult(ReturnHttpResponseMessage(ex.StatusCode, errorContentType, new StringContent(JsonConvert.SerializeObject(ex.Error))));
             }
 
         }

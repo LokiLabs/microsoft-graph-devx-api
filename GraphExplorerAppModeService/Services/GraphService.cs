@@ -15,9 +15,7 @@ namespace GraphExplorerAppModeService.Services
     {
         private string errorMessage;
 
-        /// <summary>
-        /// ErrorMessage will contain the error message from the Graph Client call.
-        /// </summary>
+        // Docs defined in IGraphService
         public string ErrorMessage { get; set; }
 
         public async Task<bool> VerifyOwnership(GraphServiceClient graphClient, string query, string clientId)
@@ -26,10 +24,10 @@ namespace GraphExplorerAppModeService.Services
 
             for (int i=0; i < queryList.Length; i++)
             {
-                if (queryList[i] == "teams")
+                if (queryList[i] == "teams" && i + 1 < queryList.Length)
                 {
                     return await VerifyTeamsOwnership(graphClient, queryList[i + 1], clientId);
-                } else if (queryList[i] == "chats")
+                } else if (queryList[i] == "chats" && i + 1 < queryList.Length)
                 {
                     return await VerifyChatOwnership(graphClient, queryList[i + 1], clientId);
                 }
