@@ -147,13 +147,9 @@ namespace GraphWebApi.Controllers
                 }
             }
 
-            var contentType = "application/json";
-           
             using (var response = await request.SendRequestAsync(content?.ToString(), CancellationToken.None, HttpCompletionOption.ResponseContentRead).ConfigureAwait(false))
             {
-                response.Content.Headers.TryGetValues("content-type", out var contentTypes);
-
-                contentType = contentTypes?.FirstOrDefault() ?? contentType;
+                string contentType = response.Content.Headers.ContentType?.MediaType ?? null;
 
                 var byteArrayContent = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
 
@@ -164,6 +160,7 @@ namespace GraphWebApi.Controllers
                     contentType = contentType
                 };
             }
+  
         }
 
         // Acquire the application context access token.
@@ -181,13 +178,16 @@ namespace GraphWebApi.Controllers
                 Content = httpContent
             };
 
-            try
+            if (!String.IsNullOrEmpty(contentType))
             {
-                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-            }
-            catch
-            {
-                httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                try
+                {
+                    httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                }
+                catch
+                {
+                    httpResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                }
             }
 
             return httpResponseMessage;
@@ -217,8 +217,12 @@ namespace GraphWebApi.Controllers
                 {
                     context.HttpContext.Response.Headers.TryAdd(header.Key, new StringValues(header.Value.ToArray()));
                 }
+                var contentType = _responseMessage.Content.Headers.ContentType;
 
-                context.HttpContext.Response.ContentType = _responseMessage.Content.Headers.ContentType.ToString();
+                if (contentType != null)
+                {
+                    context.HttpContext.Response.ContentType = contentType.ToString();
+                }
 
                 using (var stream = await _responseMessage.Content.ReadAsStreamAsync())
                 {
