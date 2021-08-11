@@ -105,7 +105,7 @@ namespace GraphWebApi.Controllers
                 bool userOwnership = await _graphService.VerifyOwnership(userGraphServiceClient, all, clientId);
 
                 if (userOwnership) {
-                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(HttpStatusCode.OK, processedGraphRequest.contentType, new ByteArrayContent(processedGraphRequest.contentByteArray)));
+                    return new HttpResponseMessageResult(ReturnHttpResponseMessage(processedGraphRequest.responseStatusCode, processedGraphRequest.contentType, new ByteArrayContent(processedGraphRequest.contentByteArray)));
                 } else
                 {
                     Error error = new Error();
@@ -124,6 +124,7 @@ namespace GraphWebApi.Controllers
         struct GraphResponse
         {
             public string contentType;
+            public HttpStatusCode responseStatusCode;
             public byte[] contentByteArray;
         }
 
@@ -159,6 +160,7 @@ namespace GraphWebApi.Controllers
                 return new GraphResponse
                 {
                     contentByteArray = byteArrayContent,
+                    responseStatusCode = response.StatusCode,
                     contentType = contentType
                 };
             }
